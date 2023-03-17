@@ -68,6 +68,29 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation CDVWKWebViewFileXhr
 
+-(void)syncWKtoNSHTTPCookieStore {
+    // Sync all cookies from the WKHTTPCookieStore to the NSHTTPCookieStorage..
+    // .. to solve make cookies set in the main or IAB webview available for proxy requests
+    @try {
+        dispatch_async(dispatch_get_main_queue(), ^{    // WKWebsiteDataStore must be used from main thread only
+            WKWebsiteDataStore* dataStore = [WKWebsiteDataStore defaultDataStore];
+            WKHTTPCookieStore* cookieStore = dataStore.httpCookieStore;
+
+            [cookieStore getAllCookies:^(NSArray* cookies) {
+                NSHTTPCookie* cookie;
+                for(cookie in cookies) {
+                    NSMutableDictionary* cookieDict = [cookie.properties mutableCopy];
+                    [cookieDict removeObjectForKey:NSHTTPCookieDiscard]; // Remove the discard flag. If it is set (even to false), the expires date will NOT be kept.
+                    NSHTTPCookie* newCookie = [NSHTTPCookie cookieWithProperties:cookieDict];
+                    [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:newCookie];
+
+                }
+            }];
+        });
+    } @catch (NSException *exception) {
+    }
+};
+
 -(void) pluginInitialize {
     [super pluginInitialize];
     
@@ -152,7 +175,7 @@ NS_ASSUME_NONNULL_BEGIN
 {
     NSURL *targetURL = nil;
 
-    if ([uri hasPrefix: @"file://"] || [uri hasPrefix: @"FILE://"])
+    if ([uri hasPrefix: @"file://"] || [uri hasPrefix: @"FILE://"] || [uri hasPrefix: @"app://"] || [uri hasPrefix: @"APP://"])
     {
         targetURL = [NSURL URLWithString:uri];
     }
@@ -322,7 +345,8 @@ NS_ASSUME_NONNULL_BEGIN
  * object.  The second argument is a java object defining the HTTP result.
  */
 - (void) performNativeXHR:(NSDictionary<NSString *, id> *) body inWebView:(WKWebView *) webView {
-    
+    [self syncWKtoNSHTTPCookieStore];
+
     NSString *requestId = [body cdvwkStringForKey:@"id"];
     NSString *callbackFunction = [body cdvwkStringForKey:@"callback"];
     NSString *urlString = [body cdvwkStringForKey:@"url"];
@@ -359,6 +383,9 @@ NS_ASSUME_NONNULL_BEGIN
     if (urlString.length == 0) {
         return sendResult( @{ @"error" : @"Invalid url"});
     }
+
+    // Fix for specific characters in URL: https://stackoverflow.com/questions/64329705/http-and-https-calls-not-working-after-cordova-upgrade
+    urlString = [urlString stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
     
     NSURL *url = [NSURL URLWithString:urlString];
     

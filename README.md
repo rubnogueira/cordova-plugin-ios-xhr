@@ -1,9 +1,6 @@
 # cordova-plugin-ios-xhr
 ## cordova-ios 6+ File XHR Plugin
 
-### ARCHIVED
-This plugin is not needed anymore
-
 ### About
 > Originally, this plugin was a merge of two other plugins, and made compatible for cordova-ios 6+.
 
@@ -16,17 +13,13 @@ This plugin is not needed anymore
 
 ### Install
 
-> Install latest release
+> Install from github master
 
-     cordova plugin add @globules-io/cordova-plugin-ios-xhr
-     
-> Or install from github master
-
-     cordova plugin add https://github.com/globules-io/cordova-plugin-ios-xhr
+     cordova plugin add https://github.com/rubnogueira/cordova-plugin-ios-xhr
      
 ### Uninstall
 
-     cordova plugin rm @globules-io/cordova-plugin-ios-xhr
+     cordova plugin rm cordova-plugin-ios-xhr
      
 ### Preferences
 
